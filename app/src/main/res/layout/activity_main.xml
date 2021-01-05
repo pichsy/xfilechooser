@@ -11,33 +11,43 @@
     <com.pichs.common.widget.cardview.XCardButton
         android:id="@+id/btn1"
         android:layout_width="200dp"
-        android:layout_height="60dp"
+        android:layout_height="44dp"
         android:gravity="center"
-        android:text="CardButton"
+        android:text="选择"
         android:textColor="#fff"
-        android:textSize="30sp"
+        android:textSize="20sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:xp_backgroundGradientEndColor="#f8e"
-        app:xp_backgroundGradientStartColor="#d94"
+        app:xp_backgroundGradientEndColor="#F783E6"
+        app:xp_backgroundGradientStartColor="#79EEE0"
         app:xp_isRadiusAdjustBounds="true" />
 
-
-    <com.pichs.common.widget.view.XButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="我是个混子，瑶瑶" />
-
-    <com.pichs.common.widget.view.XTextView
-        android:id="@+id/tv1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <com.pichs.common.widget.view.XImageView
+        android:id="@+id/iv1"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:adjustViewBounds="true"
         android:layout_marginTop="30dp"
-        android:text="大河之剑天上来，可否下马一战"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn1" />
+        android:scaleType="centerCrop" />
+
+
+    <com.pichs.common.widget.cardview.XCardButton
+        android:id="@+id/share1"
+        android:layout_width="200dp"
+        android:layout_height="44dp"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:text="分享"
+        android:textColor="#fff"
+        android:textSize="20sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:xp_backgroundGradientEndColor="#88F2B7"
+        app:xp_backgroundGradientStartColor="#F872BE"
+        app:xp_isRadiusAdjustBounds="true" />
 
 </LinearLayout>
