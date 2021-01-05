@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 FileChooser.get().with(MainActivity.this)
-                        .authority(getPackageName() + "fileprovider")
+                        .authority(getPackageName() + ".fileprovider")
                         .withCrop()
                         .gallery()
                         .listener(new FileChooser.OnFileChooseCallBack() {
