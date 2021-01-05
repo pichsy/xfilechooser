@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <paths>
+        <!--<files-path/>-->
+        <!--&lt;!&ndash;代表的根目录： Context.getFilesDir()&ndash;&gt;-->
+        <!--<cache-path/>-->
+        <!--&lt;!&ndash;代表的根目录: getCacheDir()&ndash;&gt;-->
+        <!--<external-path/>-->
+        <!--&lt;!&ndash;代表的根目录: Environment.getExternalStorageDirectory()&ndash;&gt;-->
+        <!--<external-files-path/>-->
+        <!--&lt;!&ndash;代表的根目录: Context.getExternalFilesDir(String) Context.getExternalFilesDir(null).&ndash;&gt;-->
+        <!--<external-cache-path />-->
+        <!--&lt;!&ndash;代表的根目录: Context.getExternalCacheDir().&ndash;&gt;-->
+        <!--<root-path />-->
+        <!--代表设备的根目录new File("/");-->
+        <!-- path=""代表根目录，也可以指定特定目录，name="camera_picture"是虚拟目录camera_picture -->
+        <root-path
+            name="root"
+            path="" />
+        <files-path
+            name="files"
+            path="files" />
+        <cache-path
+            name="cache"
+            path="cache" />
+        <external-path
+            name="external"
+            path="external" />
+        <external-files-path
+            name="external_files"
+            path="external_files" />
+        <external-cache-path
+            name="external_cache"
+            path="external_cache" />
+    </paths>
+</resources>
