@@ -2,18 +2,19 @@
 
 xfilechooser 系统分享和文件选择的封装，兼容多多
 FileUriUtils 可兼容获取真实路径。
+不想搞太复杂的用这个足够了，省事，
+
 
 ### 引入
 
       
-    implementation 'com.github.pichsy:xfilechooser:1.0'
+    implementation 'com.github.pichsy:xfilechooser:1.1'
     
-    ...
+  
 
 
 ### 用法
 
-    ```
         private Uri mUri;
         @Override
         protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +61,11 @@ FileUriUtils 可兼容获取真实路径。
                             .share();
                 }
             });
-    
+            
+        @Override
+        protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+            super.onActivityResult(requestCode, resultCode, data);
+            FileChooser.get().with(this).onActivityResult(requestCode, resultCode, data);
+        }
     
     ```
