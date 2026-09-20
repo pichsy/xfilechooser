@@ -4,48 +4,55 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
+    android:gravity="center_horizontal"
     android:orientation="vertical"
+    android:padding="20dp"
     tools:context=".MainActivity">
+
+    <!-- 已选择图片的预览区 -->
+    <com.pichs.common.widget.view.XImageView
+        android:id="@+id/iv1"
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_marginTop="24dp"
+        android:adjustViewBounds="true"
+        android:background="#14000000"
+        android:contentDescription="已选择的图片"
+        android:scaleType="centerCrop" />
+
+    <!-- 结果信息（message / 真实路径） -->
+    <TextView
+        android:id="@+id/tvResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:text="尚未选择图片"
+        android:textColor="#666666"
+        android:textSize="13sp" />
 
     <com.pichs.common.widget.cardview.XCardButton
         android:id="@+id/btn1"
-        android:layout_width="200dp"
-        android:layout_height="44dp"
+        android:layout_width="220dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="24dp"
         android:gravity="center"
-        android:text="选择"
-        android:textColor="#fff"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        android:text="选择图片"
+        android:textColor="#ffffff"
+        android:textSize="18sp"
         app:xp_backgroundGradientEndColor="#F783E6"
         app:xp_backgroundGradientStartColor="#79EEE0"
         app:xp_isRadiusAdjustBounds="true" />
 
-    <com.pichs.common.widget.view.XImageView
-        android:id="@+id/iv1"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:adjustViewBounds="true"
-        android:layout_marginTop="30dp"
-        android:scaleType="centerCrop" />
-
-
     <com.pichs.common.widget.cardview.XCardButton
         android:id="@+id/share1"
-        android:layout_width="200dp"
-        android:layout_height="44dp"
-        android:layout_marginTop="30dp"
+        android:layout_width="220dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="20dp"
         android:gravity="center"
         android:text="分享"
-        android:textColor="#fff"
-        android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        android:textColor="#ffffff"
+        android:textSize="18sp"
         app:xp_backgroundGradientEndColor="#88F2B7"
         app:xp_backgroundGradientStartColor="#F872BE"
         app:xp_isRadiusAdjustBounds="true" />
