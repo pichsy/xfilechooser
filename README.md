@@ -11,7 +11,7 @@ FileUriUtils 可兼容获取真实路径。
 ### 引入
 
       
-    api 'com.gitee.pichs:xfilechooser:1.1'
+    api 'com.gitee.pichs:xfilechooser:2.0.0'
     
   
 
