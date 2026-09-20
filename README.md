@@ -1,6 +1,3 @@
-# 最新地址, 该项目已移到gitee
-# [https://gitee.com/pichs/xfilechooser](https://gitee.com/pichs/xfilechooser)
-
 # XFileChooser
 
 xfilechooser 系统分享和文件选择的封装，兼容多多
