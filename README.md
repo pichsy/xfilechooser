@@ -34,6 +34,7 @@
 - ✅ **拍照选择**：调用系统相机拍照，自动通过 `FileProvider` 生成 Uri。
 - ✅ **文件选择**：`ACTION_GET_CONTENT` / `ACTION_OPEN_DOCUMENT` 选择任意文件。
 - ✅ **图片剪裁**：内置正方形剪裁（基于 `com.android.camera.action.CROP`）。
+- ✅ **结果自动回调**：内部使用 ActivityResult API，免去手动 `onActivityResult` 转发样板代码。
 - ✅ **高兼容 Uri 工具**：`getFileRealPath()` 终极版，适配主流厂商 FileProvider 与 Android 10+ 分区存储。
 
 ## 环境要求
@@ -210,14 +211,25 @@ FileChooser.get().with(this)
         .open();
 ```
 
-#### 在 onActivityResult 中转发结果
+#### 结果自动回调（无需手动 onActivityResult）
+
+`FileChooser` 内部通过无界面的 `CallbackFragment` + `ActivityResult` API 启动系统 Intent，
+选择 / 拍照 / 剪裁 / 选文件的结果会**自动回调到 `listener`**，你**不需要**再重写
+`onActivityResult` 手动转发。
+
+> 注意：Activity 场景请传入 `FragmentActivity`（`AppCompatActivity` 即为 `FragmentActivity`），
+> Fragment 场景请传入 `androidx.fragment.app.Fragment`。
 
 ```java
-@Override
-protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-    super.onActivityResult(requestCode, resultCode, data);
-    FileChooser.get().with(this).onActivityResult(requestCode, resultCode, data);
-}
+// 就这么简单，结果直接回调到 listener，无需任何 onActivityResult 样板代码
+FileChooser.get().with(this)
+        .gallery()
+        .listener((uri, bitmap, message) -> {
+            if (uri != null) {
+                imageView.setImageURI(uri);
+            }
+        })
+        .open();
 ```
 
 #### 释放资源
@@ -376,14 +388,10 @@ public class MainActivity extends AppCompatActivity {
                         .build()
                         .share());
     }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        FileChooser.get().with(this).onActivityResult(requestCode, resultCode, data);
-    }
 }
 ```
+
+> 无需重写 `onActivityResult`：选择 / 拍照 / 剪裁 / 选文件的结果会自动回调到 `listener`。
 
 ## 兼容性与注意事项
 
@@ -418,6 +426,13 @@ public class MainActivity extends AppCompatActivity {
     `MediaStore.DATA` 列为空导致的路径获取失败。
   - 支持 SD 卡等非主存储（`StorageVolume` 反射解析）。
   - 兼容更多厂商 FileProvider 前缀（华为、QQ 浏览器、Google Photos 等）与 `msf:` / `raw:` 下载前缀。
+
+**回调机制升级**
+
+- `FileChooser` 改用无界面 `CallbackFragment` + `ActivityResult` API 启动系统 Intent，
+  选择 / 拍照 / 剪裁 / 选文件的结果自动回调到 `listener`，**无需再重写 `onActivityResult` 手动转发**。
+- `FileChooser.with(Activity)` 调整为 `FileChooser.with(FragmentActivity)`，与 filepicker 对齐。
+- 旧的 `onActivityResult(...)` 转发方法标记 `@Deprecated`，保留仅为兼容旧代码。
 
 **其他**
 

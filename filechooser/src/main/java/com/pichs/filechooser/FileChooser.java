@@ -16,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -49,7 +51,7 @@ public class FileChooser {
         return INSTANCE;
     }
 
-    public FileChooserBuilder with(Activity activity) {
+    public FileChooserBuilder with(FragmentActivity activity) {
         if (mActivityFileChooserBuilderMap.containsKey(activity)) {
             return mActivityFileChooserBuilderMap.get(activity);
         }
@@ -68,6 +70,11 @@ public class FileChooser {
     }
 
 
+    /**
+     * @deprecated 2.0.0 起结果通过内部 ActivityResult API 自动回调，
+     * 无需再在 onActivityResult 中手动转发。保留此方法仅为兼容旧代码。
+     */
+    @Deprecated
     public void onActivityResult(Activity activity, int requestCode, int resultCode, @Nullable Intent data) {
         FileChooserBuilder fileChooserBuilder = mActivityFileChooserBuilderMap.get(activity);
         if (fileChooserBuilder != null) {
@@ -75,7 +82,11 @@ public class FileChooser {
         }
     }
 
-
+    /**
+     * @deprecated 2.0.0 起结果通过内部 ActivityResult API 自动回调，
+     * 无需再在 onActivityResult 中手动转发。保留此方法仅为兼容旧代码。
+     */
+    @Deprecated
     public void onActivityResult(Fragment fragment, int requestCode, int resultCode, @Nullable Intent data) {
         FileChooserBuilder fileChooserBuilder = mFragmentFileChooserBuilderMap.get(fragment);
         if (fileChooserBuilder != null) {
@@ -138,7 +149,7 @@ public class FileChooser {
         private int mCropWidth = 200;
         private String authority;
 
-        public FileChooserBuilder(Activity activity) {
+        public FileChooserBuilder(FragmentActivity activity) {
             this.type = 0;
             this.mActivityWeakReference = new WeakReference<>(activity);
             this.mContextWeakReference = new WeakReference<Context>(activity);
@@ -319,6 +330,54 @@ public class FileChooser {
         }
 
         /**
+         * 通过隐形 CallbackFragment 启动 Intent，结果在内部自动回调，
+         * 调用方无需在 onActivityResult 中手动转发。
+         */
+        private void launch(Intent intent, int requestCode) {
+            FileChooserCallbackFragment fragment = obtainCallbackFragment();
+            if (fragment == null) {
+                return;
+            }
+            fragment.setOnResultListener((resultCode, data) ->
+                    onActivityResult(requestCode, resultCode, data));
+            fragment.launch(intent);
+        }
+
+        /**
+         * 获取（或创建）用于拦截结果的隐形 Fragment。
+         */
+        private FileChooserCallbackFragment obtainCallbackFragment() {
+            FragmentManager fm = getFragmentManager();
+            if (fm == null) {
+                return null;
+            }
+            final String tag = "FileChooserCallbackFragment";
+            FileChooserCallbackFragment fragment =
+                    (FileChooserCallbackFragment) fm.findFragmentByTag(tag);
+            if (fragment == null) {
+                fragment = new FileChooserCallbackFragment();
+                fm.beginTransaction().add(fragment, tag).commitNowAllowingStateLoss();
+            }
+            return fragment;
+        }
+
+        /**
+         * 获取宿主 FragmentManager：
+         * Activity 场景使用 supportFragmentManager，Fragment 场景使用 childFragmentManager。
+         */
+        private FragmentManager getFragmentManager() {
+            if (type == 1) {
+                Fragment fragment = mFragmentWeakReference != null ? mFragmentWeakReference.get() : null;
+                return fragment != null ? fragment.getChildFragmentManager() : null;
+            }
+            Activity activity = mActivityWeakReference != null ? mActivityWeakReference.get() : null;
+            if (activity instanceof FragmentActivity) {
+                return ((FragmentActivity) activity).getSupportFragmentManager();
+            }
+            return null;
+        }
+
+        /**
          * 进行剪裁
          */
         private void startCropPhoto(Uri uri) {
@@ -330,11 +389,7 @@ public class FileChooser {
                     mCropFile = new File(getCropFileDir(), System.currentTimeMillis() + SUFFIX_FILE_NAME_CROP);
                 }
                 final Intent intent = getCropImageIntent(uri, mCropWidth, mCropFile);
-                if (type == 0) {
-                    mActivityWeakReference.get().startActivityForResult(intent, chooser_requestCode_crop);
-                } else {
-                    mFragmentWeakReference.get().startActivityForResult(intent, chooser_requestCode_crop);
-                }
+                launch(intent, chooser_requestCode_crop);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -348,11 +403,7 @@ public class FileChooser {
                 //调用相册
                 Intent intent = new Intent(Intent.ACTION_PICK,
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                if (type == 0) {
-                    mActivityWeakReference.get().startActivityForResult(intent, chooser_requestCode_gallery);
-                } else {
-                    mFragmentWeakReference.get().startActivityForResult(intent, chooser_requestCode_gallery);
-                }
+                launch(intent, chooser_requestCode_gallery);
             } catch (ActivityNotFoundException e) {
                 e.printStackTrace();
             }
@@ -373,11 +424,7 @@ public class FileChooser {
                 }
             }
             takeIntent.putExtra(MediaStore.EXTRA_OUTPUT, mCameraOutputUri);
-            if (type == 0) {
-                mActivityWeakReference.get().startActivityForResult(takeIntent, chooser_requestCode_camera);
-            } else {
-                mFragmentWeakReference.get().startActivityForResult(takeIntent, chooser_requestCode_camera);
-            }
+            launch(takeIntent, chooser_requestCode_camera);
         }
 
         /**
@@ -392,11 +439,7 @@ public class FileChooser {
             }
             intent.setType("*/*");
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            if (type == 0) {
-                mActivityWeakReference.get().startActivityForResult(intent, chooser_requestCode_file);
-            } else {
-                mFragmentWeakReference.get().startActivityForResult(intent, chooser_requestCode_file);
-            }
+            launch(intent, chooser_requestCode_file);
         }
 
         /**

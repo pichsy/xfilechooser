@@ -28,6 +28,7 @@ dependencies {
     api(libs.androidx.core.ktx)
     api(libs.androidx.appcompat)
     api(libs.androidx.annotation)
+    api(libs.androidx.activity.ktx)
     api(libs.androidx.fragment.ktx)
 }
 
