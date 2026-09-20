@@ -165,6 +165,18 @@ public class FileChooseUriUtils {
             return null;
         }
 
+        // 1. 直接就是一个文件路径的情况（例如 "file:///..." 或纯路径字符串）
+        if (new File(uri.toString()).exists()) {
+            return uri.toString();
+        }
+
+        // 2. 优先使用增强的 uri2File 转换（内部包含缓存拷贝兜底，
+        //    兼容 Android 10+ 分区存储下 MediaStore.DATA 为空的情况）
+        final File uriFile = uri2File(context, uri);
+        if (uriFile != null) {
+            return uriFile.getAbsolutePath();
+        }
+
         String realPath = null;
         if (Build.VERSION.SDK_INT >= 19) {
             if (DocumentsContract.isDocumentUri(context, uri)) {
@@ -263,7 +275,265 @@ public class FileChooseUriUtils {
         if (TextUtils.isEmpty(realPath)) {
             realPath = queryRealPath(context, uri);
         }
+        // 3. 最后兜底：无法解析出真实路径时，把内容拷贝到应用缓存目录，
+        //    保证调用方始终能拿到一个可读的文件路径
+        if (TextUtils.isEmpty(realPath)) {
+            final File cacheFile = copyUri2Cache(context, uri);
+            if (cacheFile != null) {
+                realPath = cacheFile.getAbsolutePath();
+            }
+        }
         return realPath;
+    }
+
+    /**
+     * uri 转 File（对齐 xbase 的 UriHelper.uri2File）
+     * 优先尝试直接解析出真实文件，解析不出来时拷贝到缓存。
+     */
+    private static File uri2File(Context context, Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+        File file = uri2FileReal(context, uri);
+        if (file == null) {
+            file = copyUri2Cache(context, uri);
+        }
+        return file;
+    }
+
+    /**
+     * 直接解析 uri 对应的真实文件（不拷贝）。对齐 xbase 的 UriHelper.uri2FileReal。
+     */
+    private static File uri2FileReal(Context context, Uri uri) {
+        String authority = uri.getAuthority();
+        String scheme = uri.getScheme();
+        String path = uri.getPath();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && path != null) {
+            // 不同厂商的 FileProvider 会生成各种自定义前缀
+            final String[] externals = {"/external/", "/external_path/"};
+            for (String external : externals) {
+                if (path.startsWith(external)) {
+                    File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath()
+                            + path.replace(external, "/"));
+                    if (file.exists()) {
+                        return file;
+                    }
+                }
+            }
+            File file = null;
+            if (path.startsWith("/files_path/")) {
+                file = new File(context.getApplicationContext().getFilesDir().getAbsolutePath()
+                        + path.replace("/files_path/", "/"));
+            } else if (path.startsWith("/cache_path/")) {
+                file = new File(context.getApplicationContext().getCacheDir().getAbsolutePath()
+                        + path.replace("/cache_path/", "/"));
+            } else if (path.startsWith("/external_files_path/")) {
+                File dir = context.getApplicationContext().getExternalFilesDir(null);
+                file = new File(dir != null ? dir.getAbsolutePath() : "",
+                        path.replace("/external_files_path/", "/"));
+            } else if (path.startsWith("/external_cache_path/")) {
+                File dir = context.getApplicationContext().getExternalCacheDir();
+                file = new File(dir != null ? dir.getAbsolutePath() : "",
+                        path.replace("/external_cache_path/", "/"));
+            }
+            if (file != null && file.exists()) {
+                return file;
+            }
+        }
+
+        if (ContentResolver.SCHEME_FILE.equalsIgnoreCase(scheme)) {
+            return path == null ? null : new File(path);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
+                && DocumentsContract.isDocumentUri(context.getApplicationContext(), uri)) {
+            if ("com.android.externalstorage.documents".equals(authority)) {
+                final String docId = DocumentsContract.getDocumentId(uri);
+                final String[] split = docId.split(":");
+                final String type = split[0];
+                if ("primary".equalsIgnoreCase(type)) {
+                    return new File(Environment.getExternalStorageDirectory() + "/" + split[1]);
+                } else {
+                    // SD 卡等非主存储，通过 StorageVolume 反射解析真实路径
+                    return getFileForExternalStorage(context, type, split);
+                }
+            } else if ("com.android.providers.downloads.documents".equals(authority)) {
+                String id = DocumentsContract.getDocumentId(uri);
+                if (TextUtils.isEmpty(id)) {
+                    return null;
+                }
+                if (id.startsWith("raw:")) {
+                    return new File(id.substring(4));
+                } else if (id.startsWith("msf:")) {
+                    id = id.split(":")[1];
+                }
+                long availableId;
+                try {
+                    availableId = Long.parseLong(id);
+                } catch (Exception e) {
+                    return null;
+                }
+                final String[] contentUriPrefixesToTry = {
+                        "content://downloads/public_downloads",
+                        "content://downloads/all_downloads",
+                        "content://downloads/my_downloads"
+                };
+                for (String contentUriPrefix : contentUriPrefixesToTry) {
+                    try {
+                        final Uri contentUri = ContentUris.withAppendedId(Uri.parse(contentUriPrefix), availableId);
+                        File file = getFileFromUri(context, contentUri, null, null);
+                        if (file != null) {
+                            return file;
+                        }
+                    } catch (Exception ignore) {
+                        // 该前缀不存在或 id 无效，继续尝试下一个
+                    }
+                }
+                return null;
+            } else if ("com.android.providers.media.documents".equals(authority)) {
+                final String docId = DocumentsContract.getDocumentId(uri);
+                final String[] split = docId.split(":");
+                final String type = split[0];
+                Uri contentUri;
+                if ("image".equals(type)) {
+                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                } else if ("video".equals(type)) {
+                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
+                } else if ("audio".equals(type)) {
+                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+                } else {
+                    return null;
+                }
+                return getFileFromUri(context, contentUri, "_id=?", new String[]{split[1]});
+            } else if (ContentResolver.SCHEME_CONTENT.equalsIgnoreCase(scheme)) {
+                return getFileFromUri(context, uri, null, null);
+            } else {
+                return null;
+            }
+        } else if (ContentResolver.SCHEME_CONTENT.equalsIgnoreCase(scheme)) {
+            return getFileFromUri(context, uri, null, null);
+        }
+        return null;
+    }
+
+    /**
+     * 针对特殊 authority 或通过 MediaStore.DATA 列解析文件。对齐 xbase 的 getFileFromUri。
+     */
+    private static File getFileFromUri(Context context, Uri uri, String selection, String[] selectionArgs) {
+        final String authority = uri.getAuthority();
+        if ("com.google.android.apps.photos.content".equals(authority)) {
+            if (!TextUtils.isEmpty(uri.getLastPathSegment())) {
+                return new File(uri.getLastPathSegment());
+            }
+        } else if ("com.tencent.mtt.fileprovider".equals(authority)) {
+            final String path = uri.getPath();
+            if (!TextUtils.isEmpty(path) && path.startsWith("/QQBrowser")) {
+                return new File(Environment.getExternalStorageDirectory(),
+                        path.substring("/QQBrowser".length()));
+            }
+        } else if ("com.huawei.hidisk.fileprovider".equals(authority)) {
+            final String path = uri.getPath();
+            if (!TextUtils.isEmpty(path)) {
+                return new File(path.replace("/root", ""));
+            }
+        }
+        Cursor cursor = null;
+        try {
+            cursor = context.getApplicationContext().getContentResolver().query(
+                    uri, new String[]{MediaStore.Files.FileColumns.DATA}, selection, selectionArgs, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA);
+                if (columnIndex > -1) {
+                    return new File(cursor.getString(columnIndex));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 通过反射 StorageVolume 解析 SD 卡等非主存储的真实路径。
+     * 对齐 xbase 中对 com.android.externalstorage.documents 非 primary 的处理。
+     */
+    private static File getFileForExternalStorage(Context context, String uuid, String[] split) {
+        try {
+            android.os.storage.StorageManager storageManager =
+                    (android.os.storage.StorageManager) context.getApplicationContext()
+                            .getSystemService(Context.STORAGE_SERVICE);
+            Class<?> storageVolumeClazz = Class.forName("android.os.storage.StorageVolume");
+            Method getVolumeList = storageManager.getClass().getMethod("getVolumeList");
+            Method getUuid = storageVolumeClazz.getMethod("getUuid");
+            Method getState = storageVolumeClazz.getMethod("getState");
+            Method getPath = storageVolumeClazz.getMethod("getPath");
+            Method isPrimary = storageVolumeClazz.getMethod("isPrimary");
+            Method isEmulated = storageVolumeClazz.getMethod("isEmulated");
+            Object result = getVolumeList.invoke(storageManager);
+            int length = java.lang.reflect.Array.getLength(result);
+            for (int i = 0; i < length; i++) {
+                Object storageVolumeElement = java.lang.reflect.Array.get(result, i);
+                String state = (String) getState.invoke(storageVolumeElement);
+                boolean mounted = Environment.MEDIA_MOUNTED.equals(state)
+                        || Environment.MEDIA_MOUNTED_READ_ONLY.equals(state);
+                if (!mounted) {
+                    continue;
+                }
+                if ((Boolean) isPrimary.invoke(storageVolumeElement)
+                        && (Boolean) isEmulated.invoke(storageVolumeElement)) {
+                    continue;
+                }
+                String volumeUuid = (String) getUuid.invoke(storageVolumeElement);
+                if (volumeUuid != null && volumeUuid.equals(uuid)) {
+                    String volumePath = (String) getPath.invoke(storageVolumeElement);
+                    return new File(volumePath + "/" + split[1]);
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 把 uri 对应的内容拷贝到应用缓存目录，返回拷贝后的临时文件。
+     * 用于 Android 10+ 分区存储下无法直接拿到真实路径时的兜底方案。
+     */
+    private static File copyUri2Cache(Context context, Uri uri) {
+        InputStream is = null;
+        BufferedOutputStream bos = null;
+        try {
+            is = context.getApplicationContext().getContentResolver().openInputStream(uri);
+            if (is == null) {
+                return null;
+            }
+            File file = new File(context.getApplicationContext().getCacheDir(),
+                    System.currentTimeMillis() + ".tmp");
+            bos = new BufferedOutputStream(new FileOutputStream(file));
+            byte[] buf = new byte[1024];
+            int len;
+            while ((len = is.read(buf)) != -1) {
+                bos.write(buf, 0, len);
+            }
+            bos.flush();
+            return file;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+                if (bos != null) {
+                    bos.close();
+                }
+            } catch (IOException ignore) {
+                // ignore
+            }
+        }
     }
 
     /**
