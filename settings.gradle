@@ -1,3 +1,0 @@
-include ':app'
-include ':filechooser'
-rootProject.name = "xfilechooser"

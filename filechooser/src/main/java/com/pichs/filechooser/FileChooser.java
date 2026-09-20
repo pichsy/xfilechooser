@@ -416,7 +416,7 @@ public class FileChooser {
                             Bitmap bitmap = null;
                             if (asBitmap) {
                                 try {
-                                    bitmap = BitmapFactory.decodeFile(FileUriUtils.getFileRealPath(mContextWeakReference.get(), uri));
+                                    bitmap = BitmapFactory.decodeFile(FileChooseUriUtils.getFileRealPath(mContextWeakReference.get(), uri));
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -427,7 +427,7 @@ public class FileChooser {
                         //部分手机可能直接存放在bundle中
                         if (data.hasExtra("data")) {
                             Bitmap bitmap = data.getParcelableExtra("data");
-                            Uri outputUri = FileUriUtils.saveBitmapAndReturnUri(mContextWeakReference.get(), bitmap, System.currentTimeMillis() + SUFFIX_FILE_NAME_CAMERA);
+                            Uri outputUri = FileChooseUriUtils.saveBitmapAndReturnUri(mContextWeakReference.get(), bitmap, System.currentTimeMillis() + SUFFIX_FILE_NAME_CAMERA);
                             if (isCrop) {
                                 startCropPhoto(outputUri);
                                 return;
@@ -445,7 +445,7 @@ public class FileChooser {
                 if (data != null && data.hasExtra("data")) {
                     Bitmap bitmap = data.getParcelableExtra("data");
                     // 创建bitmap
-                    Uri outputUri = FileUriUtils.saveBitmapAndReturnUri(mContextWeakReference.get(), bitmap, System.currentTimeMillis() + SUFFIX_FILE_NAME_CAMERA);
+                    Uri outputUri = FileChooseUriUtils.saveBitmapAndReturnUri(mContextWeakReference.get(), bitmap, System.currentTimeMillis() + SUFFIX_FILE_NAME_CAMERA);
                     if (isCrop) {
                         startCropPhoto(outputUri);
                         return;
@@ -462,7 +462,7 @@ public class FileChooser {
                         Bitmap bitmap = null;
                         if (asBitmap) {
                             try {
-                                bitmap = BitmapFactory.decodeFile(FileUriUtils.getFileRealPath(mContextWeakReference.get(), mCameraOutputUri));
+                                bitmap = BitmapFactory.decodeFile(FileChooseUriUtils.getFileRealPath(mContextWeakReference.get(), mCameraOutputUri));
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -482,7 +482,7 @@ public class FileChooser {
                     }
 
                     // 需要判断是否是图片
-                    String fileRealPath = FileUriUtils.getFileRealPath(mContextWeakReference.get(), uri);
+                    String fileRealPath = FileChooseUriUtils.getFileRealPath(mContextWeakReference.get(), uri);
                     boolean isImageFile = false;
                     if (fileRealPath != null) {
                         // 如果后缀是jpg，jpeg，png这三种格式则是图片
@@ -504,7 +504,7 @@ public class FileChooser {
                             Bitmap bitmap = null;
                             if (asBitmap) {
                                 try {
-                                    bitmap = BitmapFactory.decodeFile(FileUriUtils.getFileRealPath(mContextWeakReference.get(), uri));
+                                    bitmap = BitmapFactory.decodeFile(FileChooseUriUtils.getFileRealPath(mContextWeakReference.get(), uri));
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -520,7 +520,7 @@ public class FileChooser {
                 if (mCropFile != null) {
                     // 返回CropUri
                     if (mFileChooseCallBack != null) {
-                        Uri outputUri = FileUriUtils.getUri(mContextWeakReference.get(),ContentType.IMAGE, mCropFile);
+                        Uri outputUri = FileChooseUriUtils.getUri(mContextWeakReference.get(),ContentType.IMAGE, mCropFile);
                         Bitmap bitmap = null;
                         if (asBitmap) {
                             try {
@@ -556,7 +556,7 @@ public class FileChooser {
                 Uri outputUri = Uri.fromFile(cropOutputFile);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     //这个方法是处理4.4以上图片返回的Uri对象不同的处理方法
-                    String srcFile = FileUriUtils.getFileRealPath(mContextWeakReference.get(), photoUri);
+                    String srcFile = FileChooseUriUtils.getFileRealPath(mContextWeakReference.get(), photoUri);
                     if (srcFile != null) {
                         intent.setDataAndType(Uri.fromFile(new File(srcFile)), "image/*");
                     }

@@ -45,7 +45,7 @@ import java.util.List;
  * }
  */
 @SuppressWarnings("ALL")
-public class FileUriUtils {
+public class FileChooseUriUtils {
 
     private static final String TAG = "Share";
 
